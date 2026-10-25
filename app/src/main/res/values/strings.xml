@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">PulseFolio</string>
+    <string name="tagline_institutional">Global Markets • Cloud Portfolio • EMI &amp; FIRE Wealth Lab</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="nav_markets">Markets</string>
+    <string name="nav_portfolio">Portfolio</string>
+    <string name="nav_emi_lab">EMI Lab</string>
+    <string name="nav_wealth_lab">Wealth</string>
+    <string name="market_live_feed">LIVE STREAMING FEED</string>
+    <string name="search_stocks_hint">Search US &amp; Global stocks (e.g. AAPL, NVDA, TCS.NS)…</string>
+    <string name="add_holding_button">Add Position</string>
+    <string name="save_emi_plan_button">Save EMI Plan to Cloud</string>
+    <string name="empty_portfolio_title">Your Global Cloud Portfolio is Empty</string>
+    <string name="empty_portfolio_subtitle">Add your first stock position or load starter global blue-chip positions to track real-time P&amp;L, dividends, and allocation.</string>
+    <string name="seed_starter_portfolio">Load Global Blue-Chip Portfolio</string>
+</resources>

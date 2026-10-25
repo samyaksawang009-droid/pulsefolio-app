@@ -1,0 +1,193 @@
+{
+  "entities": {
+    "PortfolioHolding": {
+      "title": "PortfolioHolding",
+      "description": "Represents a stock or asset holding in a user's investment portfolio.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Ticker symbol of the stock or asset (e.g. AAPL, NVDA)."
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Full display name of the company or asset."
+        },
+        "shares": {
+          "type": "number",
+          "description": "Number of shares or units held (> 0)."
+        },
+        "avgBuyPrice": {
+          "type": "number",
+          "description": "Average purchase price per share in USD (> 0)."
+        },
+        "sector": {
+          "type": "string",
+          "description": "Market sector or category (e.g. Technology, Finance, ETF, Crypto)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional investment thesis or note."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when holding was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when holding was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "symbol",
+        "companyName",
+        "shares",
+        "avgBuyPrice",
+        "sector",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WatchlistItem": {
+      "title": "WatchlistItem",
+      "description": "Represents a stock symbol tracked on the user's real-time watchlist with optional price alert.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Ticker symbol being watched."
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Full display name of the company."
+        },
+        "targetAlertPrice": {
+          "type": "number",
+          "description": "Target price alert threshold in USD (0 if no alert)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when added to watchlist (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "symbol",
+        "companyName",
+        "targetAlertPrice",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "EmiPlan": {
+      "title": "EmiPlan",
+      "description": "Represents a saved EMI and loan amortization calculation scenario.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the authenticated owner."
+        },
+        "title": {
+          "type": "string",
+          "description": "User-defined label for the loan plan."
+        },
+        "loanType": {
+          "type": "string",
+          "enum": [
+            "Home Loan",
+            "Auto Loan",
+            "Personal Loan",
+            "Education Loan",
+            "Investment Loan"
+          ],
+          "description": "Category of the loan."
+        },
+        "principal": {
+          "type": "number",
+          "description": "Loan principal amount."
+        },
+        "annualRate": {
+          "type": "number",
+          "description": "Annual interest rate percentage."
+        },
+        "tenureMonths": {
+          "type": "integer",
+          "description": "Loan repayment tenure in months."
+        },
+        "monthlyPrepayment": {
+          "type": "number",
+          "description": "Optional recurring monthly extra principal payment."
+        },
+        "monthlyEmi": {
+          "type": "number",
+          "description": "Calculated monthly EMI payment."
+        },
+        "totalInterest": {
+          "type": "number",
+          "description": "Calculated total interest payable over the loan life."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when plan was saved (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when plan was updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "loanType",
+        "principal",
+        "annualRate",
+        "tenureMonths",
+        "monthlyPrepayment",
+        "monthlyEmi",
+        "totalInterest",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/holdings/{holdingId}": {
+      "schema": {
+        "$ref": "#/entities/PortfolioHolding"
+      },
+      "description": "Stores a user's portfolio stock holdings."
+    },
+    "/users/{userId}/watchlist/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/WatchlistItem"
+      },
+      "description": "Stores a user's watched stock symbols and target price alerts."
+    },
+    "/users/{userId}/emi_plans/{planId}": {
+      "schema": {
+        "$ref": "#/entities/EmiPlan"
+      },
+      "description": "Stores a user's saved EMI loan calculation scenarios."
+    }
+  }
+}

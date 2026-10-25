@@ -1,0 +1,148 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isNumber(val) {
+      return val is int || val is float;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    // Entity 1: PortfolioHolding Validation Blueprint
+    function isValidPortfolioHolding(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.symbol is string && data.symbol.size() >= 1 && data.symbol.size() <= 20 &&
+             data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 120 &&
+             isNumber(data.shares) && data.shares > 0 && data.shares <= 1000000000 &&
+             isNumber(data.avgBuyPrice) && data.avgBuyPrice > 0 && data.avgBuyPrice <= 1000000000 &&
+             data.sector is string && data.sector.size() >= 1 && data.sector.size() <= 60 &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 300)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    // Entity 2: WatchlistItem Validation Blueprint
+    function isValidWatchlistItem(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.symbol is string && data.symbol.size() >= 1 && data.symbol.size() <= 20 &&
+             data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 120 &&
+             isNumber(data.targetAlertPrice) && data.targetAlertPrice >= 0 && data.targetAlertPrice <= 1000000000 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    // Entity 3: EmiPlan Validation Blueprint
+    function isValidEmiPlan(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.loanType is string && data.loanType in ['Home Loan', 'Auto Loan', 'Personal Loan', 'Education Loan', 'Investment Loan'] &&
+             isNumber(data.principal) && data.principal > 0 && data.principal <= 10000000000 &&
+             isNumber(data.annualRate) && data.annualRate > 0 && data.annualRate <= 100 &&
+             data.tenureMonths is int && data.tenureMonths >= 1 && data.tenureMonths <= 600 &&
+             isNumber(data.monthlyPrepayment) && data.monthlyPrepayment >= 0 && data.monthlyPrepayment <= 1000000000 &&
+             isNumber(data.monthlyEmi) && data.monthlyEmi > 0 && data.monthlyEmi <= 10000000000 &&
+             isNumber(data.totalInterest) && data.totalInterest >= 0 && data.totalInterest <= 100000000000 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    // Collection 1: User Portfolio Holdings
+    match /users/{userId}/holdings/{holdingId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(holdingId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(holdingId) &&
+                       incoming().keys().hasAll(['userId', 'symbol', 'companyName', 'shares', 'avgBuyPrice', 'sector', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'symbol', 'companyName', 'shares', 'avgBuyPrice', 'sector', 'notes', 'createdAt', 'updatedAt']) &&
+                       isValidPortfolioHolding(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(holdingId) &&
+                       isValidPortfolioHolding(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['symbol', 'companyName', 'shares', 'avgBuyPrice', 'sector', 'notes', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(holdingId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 2: User Watchlist
+    match /users/{userId}/watchlist/{itemId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(itemId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(itemId) &&
+                       incoming().keys().hasAll(['userId', 'symbol', 'companyName', 'targetAlertPrice', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'symbol', 'companyName', 'targetAlertPrice', 'createdAt', 'updatedAt']) &&
+                       isValidWatchlistItem(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(itemId) &&
+                       isValidWatchlistItem(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['symbol', 'companyName', 'targetAlertPrice', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(itemId) && existing().userId == request.auth.uid;
+    }
+
+    // Collection 3: User Saved EMI Plans
+    match /users/{userId}/emi_plans/{planId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(planId) && existing().userId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(planId) &&
+                       incoming().keys().hasAll(['userId', 'title', 'loanType', 'principal', 'annualRate', 'tenureMonths', 'monthlyPrepayment', 'monthlyEmi', 'totalInterest', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'title', 'loanType', 'principal', 'annualRate', 'tenureMonths', 'monthlyPrepayment', 'monthlyEmi', 'totalInterest', 'createdAt', 'updatedAt']) &&
+                       isValidEmiPlan(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidId(planId) &&
+                       isValidEmiPlan(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'loanType', 'principal', 'annualRate', 'tenureMonths', 'monthlyPrepayment', 'monthlyEmi', 'totalInterest', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId) && isValidId(planId) && existing().userId == request.auth.uid;
+    }
+  }
+}
